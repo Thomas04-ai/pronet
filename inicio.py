@@ -1,53 +1,58 @@
 import ctypes
 import subprocess
+import customtkinter as ctk
 import tkinter as tk
-from tkinter import ttk, messagebox, simpledialog
+from tkinter import messagebox, simpledialog
 
-class StartupManager:
+class StartupManager(ctk.CTk):
     def __init__(self, parent_frame):
-        self.frame = ttk.Frame(parent_frame, padding="10")
-        self.frame.pack(fill=tk.BOTH, expand=True)
-        
-        # Interfaz
-        title_label = ttk.Label(self.frame, text="Gestor de Inicio de Windows", font=('Helvetica', 12, 'bold'))
-        title_label.pack(pady=5)
-        
-        # Frame para el treeview y scrollbars
-        tree_frame = ttk.Frame(self.frame)
-        tree_frame.pack(fill=tk.BOTH, expand=True, pady=(0, 10))
-        
-        # Treeview
-        self.tree = ttk.Treeview(tree_frame, columns=('Name', 'Status'), show='headings')
+        super().__init__()
+        ctk.set_appearance_mode("dark")
+        ctk.set_default_color_theme("dark-blue")
+        self.title("Gestor de Inicio de Windows")
+        self.geometry("700x500")
+        self.configure(bg="#18181b")
+
+        self.frame = ctk.CTkFrame(self, corner_radius=15, fg_color="#232326")
+        self.frame.pack(fill="both", expand=True, padx=24, pady=24)
+
+        title_label = ctk.CTkLabel(self.frame, text="Gestor de Inicio de Windows", font=("Segoe UI", 20, "bold"), text_color="#fafafa")
+        title_label.pack(pady=12)
+
+        # Treeview (usamos ttk pero lo integramos en el frame de ctk)
+        tree_frame = ctk.CTkFrame(self.frame, corner_radius=10, fg_color="#232326")
+        tree_frame.pack(fill="both", expand=True, pady=(0, 10))
+
+        style = tk.ttk.Style()
+        style.theme_use("clam")
+        style.configure("Treeview", background="#232326", foreground="#fafafa", fieldbackground="#232326", font=("Segoe UI", 12))
+        style.configure("Treeview.Heading", background="#27272a", foreground="#fafafa", font=("Segoe UI", 13, "bold"))
+        style.map('Treeview', background=[('selected', '#3b82f6')])
+
+        self.tree = tk.ttk.Treeview(tree_frame, columns=('Name', 'Status'), show='headings', selectmode='browse')
         self.tree.heading('Name', text='Nombre del Programa')
         self.tree.heading('Status', text='Estado')
-        
-        # Configurar ancho de columnas
         self.tree.column('Name', width=400)
-        self.tree.column('Status', width=150)
-        
-        # Scrollbars
-        vsb = ttk.Scrollbar(tree_frame, orient="vertical", command=self.tree.yview)
-        hsb = ttk.Scrollbar(tree_frame, orient="horizontal", command=self.tree.xview)
+        self.tree.column('Status', width=180)
+
+        vsb = tk.ttk.Scrollbar(tree_frame, orient="vertical", command=self.tree.yview)
+        hsb = tk.ttk.Scrollbar(tree_frame, orient="horizontal", command=self.tree.xview)
         self.tree.configure(yscrollcommand=vsb.set, xscrollcommand=hsb.set)
-        
-        # Layout con grid dentro del tree_frame
+
         self.tree.grid(row=0, column=0, sticky='nsew')
         vsb.grid(row=0, column=1, sticky='ns')
         hsb.grid(row=1, column=0, sticky='ew')
-        
-        # Configurar pesos para que el treeview se expanda
         tree_frame.grid_rowconfigure(0, weight=1)
         tree_frame.grid_columnconfigure(0, weight=1)
-        
+
         # Botones
-        btn_frame = ttk.Frame(self.frame)
-        btn_frame.pack(fill=tk.X, pady=5)
-        
-        ttk.Button(btn_frame, text="Deshabilitar Seleccionado", command=self.disable_startup).pack(side=tk.LEFT, padx=5)
-        ttk.Button(btn_frame, text="Habilitar Seleccionado", command=self.enable_startup).pack(side=tk.LEFT, padx=5)
-        ttk.Button(btn_frame, text="Actualizar Lista", command=self.load_startup).pack(side=tk.RIGHT, padx=5)
-        
-        # Cargar datos
+        btn_frame = ctk.CTkFrame(self.frame, corner_radius=10, fg_color="#232326")
+        btn_frame.pack(fill="x", pady=5)
+
+        ctk.CTkButton(btn_frame, text="Deshabilitar Seleccionado", command=self.disable_startup, fg_color="#27272a", hover_color="#ef4444", text_color="#fafafa").pack(side="left", padx=5, pady=7, fill="x", expand=True)
+        ctk.CTkButton(btn_frame, text="Habilitar Seleccionado", command=self.enable_startup, fg_color="#27272a", hover_color="#22c55e", text_color="#fafafa").pack(side="left", padx=5, pady=7, fill="x", expand=True)
+        ctk.CTkButton(btn_frame, text="Actualizar Lista", command=self.load_startup, fg_color="#27272a", hover_color="#3b82f6", text_color="#fafafa").pack(side="right", padx=5, pady=7, fill="x", expand=True)
+
         self.load_startup()
     
     def load_startup(self):
@@ -224,13 +229,5 @@ class StartupManager:
 
 # Agregar interfaz principal para ejecutar directamente
 if __name__ == "__main__":
-    root = tk.Tk()
-    root.title("Gestor de Inicio de Windows")
-    root.geometry("900x600")
-    root.minsize(600, 400)
-    
-    # Crear la aplicación
-    app = StartupManager(root)
-    
-    # Ejecutar la aplicación
-    root.mainloop()
+    app = StartupManager(None)
+    app.mainloop()
