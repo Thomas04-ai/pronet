@@ -20,44 +20,32 @@ class StartupManager(ctk.CTk):
         # Título
         ctk.CTkLabel(main_frame, text="Gestor de Inicio de Windows", font=("Segoe UI", 22, "bold"), text_color="#fafafa").pack(pady=(10, 18))
 
-        # Frame para Treeview y barra de búsqueda
-        tree_outer_frame = ctk.CTkFrame(main_frame, corner_radius=12, fg_color="#18181b")
-        tree_outer_frame.pack(fill="both", expand=True, pady=(0, 12))
+
+        # Frame para barra de búsqueda y lista moderna
+        list_outer_frame = ctk.CTkFrame(main_frame, corner_radius=12, fg_color="#18181b")
+        list_outer_frame.pack(fill="both", expand=True, pady=(0, 12))
 
         # Barra de búsqueda
-        search_frame = ctk.CTkFrame(tree_outer_frame, fg_color="#18181b")
+        search_frame = ctk.CTkFrame(list_outer_frame, fg_color="#18181b")
         search_frame.pack(fill="x", pady=(8, 2), padx=8)
         ctk.CTkLabel(search_frame, text="Buscar programa:", font=("Segoe UI", 13), text_color="#fafafa").pack(side="left", padx=(4, 6))
         self.search_var = ctk.StringVar()
         search_entry = ctk.CTkEntry(search_frame, textvariable=self.search_var, width=220, fg_color="#232326", text_color="#fafafa")
         search_entry.pack(side="left", padx=(0, 8))
-        self.search_var.trace_add("write", lambda *args: self.filter_treeview())
+        self.search_var.trace_add("write", lambda *args: self.filter_program_list())
 
-        # Treeview con estilo profesional
-        tree_frame = ctk.CTkFrame(tree_outer_frame, corner_radius=10, fg_color="#232326")
-        tree_frame.pack(fill="both", expand=True, pady=(0, 8), padx=8)
+        # Encabezados de la tabla
+        header_frame = ctk.CTkFrame(list_outer_frame, fg_color="#232326")
+        header_frame.pack(fill="x", padx=8)
+        ctk.CTkLabel(header_frame, text="Nombre del Programa", font=("Segoe UI", 13, "bold"), text_color="#fafafa", width=400, anchor="w").pack(side="left", padx=(0,0))
+        ctk.CTkLabel(header_frame, text="Estado", font=("Segoe UI", 13, "bold"), text_color="#fafafa", width=180, anchor="w").pack(side="left", padx=(0,0))
 
-        style = tk.ttk.Style()
-        style.theme_use("clam")
-        style.configure("Treeview", background="#232326", foreground="#fafafa", fieldbackground="#232326", font=("Segoe UI", 12), borderwidth=0)
-        style.configure("Treeview.Heading", background="#27272a", foreground="#fafafa", font=("Segoe UI", 13, "bold"))
-        style.map('Treeview', background=[('selected', '#3b82f6')])
+        # ScrollableFrame para la lista de programas
+        self.program_scroll = ctk.CTkScrollableFrame(list_outer_frame, width=600, height=260, fg_color="#18181b")
+        self.program_scroll.pack(fill="both", expand=True, padx=8, pady=(0,8))
+        self.program_rows = []
+        self.selected_program = None
 
-        self.tree = tk.ttk.Treeview(tree_frame, columns=('Name', 'Status'), show='headings', selectmode='browse')
-        self.tree.heading('Name', text='Nombre del Programa')
-        self.tree.heading('Status', text='Estado')
-        self.tree.column('Name', width=400)
-        self.tree.column('Status', width=180)
-
-        vsb = tk.ttk.Scrollbar(tree_frame, orient="vertical", command=self.tree.yview)
-        hsb = tk.ttk.Scrollbar(tree_frame, orient="horizontal", command=self.tree.xview)
-        self.tree.configure(yscrollcommand=vsb.set, xscrollcommand=hsb.set)
-
-        self.tree.grid(row=0, column=0, sticky='nsew')
-        vsb.grid(row=0, column=1, sticky='ns')
-        hsb.grid(row=1, column=0, sticky='ew')
-        tree_frame.grid_rowconfigure(0, weight=1)
-        tree_frame.grid_columnconfigure(0, weight=1)
 
         # Botones con diseño moderno
         btn_frame = ctk.CTkFrame(main_frame, corner_radius=10, fg_color="#232326")
@@ -69,17 +57,17 @@ class StartupManager(ctk.CTk):
         self.status_var = ctk.StringVar(value="Selecciona un programa para habilitar o deshabilitar del inicio")
         ctk.CTkLabel(main_frame, textvariable=self.status_var, font=("Segoe UI", 13), text_color="#f59e42", anchor="w").pack(fill="x", pady=(8, 2), padx=8)
 
+        self.programs = []
         self.load_startup()
-    def filter_treeview(self):
-        """Filtra los elementos del Treeview según el texto de búsqueda"""
+    def filter_program_list(self):
+        """Filtra los elementos de la lista moderna según el texto de búsqueda"""
         search_text = self.search_var.get().lower() if hasattr(self, 'search_var') else ""
-        for item in self.tree.get_children():
-            values = self.tree.item(item)['values']
-            name = str(values[0]).lower() if values else ""
+        for row in self.program_rows:
+            name = row['name'].lower()
             if search_text in name:
-                self.tree.reattach(item, '', tk.END)
+                row['frame'].pack(fill="x", pady=2, padx=2)
             else:
-                self.tree.detach(item)
+                row['frame'].pack_forget()
         # Actualiza barra de estado
         if search_text:
             self.status_var.set(f"Filtrando por: '{self.search_var.get()}'")
@@ -87,126 +75,129 @@ class StartupManager(ctk.CTk):
             self.status_var.set("Selecciona un programa para habilitar o deshabilitar del inicio")
     
     def load_startup(self):
-        self.tree.delete(*self.tree.get_children())
-        
+        # Limpiar lista moderna
+        for row in getattr(self, 'program_rows', []):
+            row['frame'].destroy()
+        self.program_rows = []
+        self.programs = []
+
         # Cargar programas de inicio desde ambos registros
         startup_locations = [
             ("HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Run", "Usuario"),
             ("HKLM\\Software\\Microsoft\\Windows\\CurrentVersion\\Run", "Sistema")
         ]
-        
+
         for registry_path, location_type in startup_locations:
             try:
-                # Obtener entradas del registro
-                result = subprocess.run(['reg', 'query', registry_path], 
-                                      capture_output=True, text=True, shell=True)
-                
+                result = subprocess.run(['reg', 'query', registry_path], capture_output=True, text=True, shell=True)
                 if result.returncode == 0:
                     lines = result.stdout.split('\n')
                     for line in lines:
                         line = line.strip()
                         if line and 'REG_SZ' in line:
-                            # Extraer nombre del programa
                             parts = line.split('REG_SZ')
                             if len(parts) >= 2:
                                 name = parts[0].strip()
                                 path = parts[1].strip()
-                                
-                                # Filtrar entradas válidas
                                 if name and name not in ['(Default)', '(Predeterminado)']:
                                     status = f"Habilitado ({location_type})"
-                                    self.tree.insert('', tk.END, values=(name, status), 
-                                                   tags=(registry_path, name, path))
-                                    
-            except Exception as e:
+                                    self.add_program_row(name, status, registry_path, path)
+            except Exception:
                 continue
-                
+
         # También agregar programas deshabilitados conocidos (opcional)
         self.add_disabled_programs()
     
     def add_disabled_programs(self):
         """Agregar algunos programas comunes que pueden estar deshabilitados"""
-        # Esta es una función opcional para mostrar programas que podrían estar deshabilitados
         common_programs = [
             "Discord", "Spotify", "Steam", "Skype", "Teams", "Zoom", 
             "Adobe Updater", "Java Update", "Chrome", "Firefox"
         ]
-        
         for program in common_programs:
-            # Verificar si ya está en la lista
             found = False
-            for child in self.tree.get_children():
-                if program.lower() in self.tree.item(child)['values'][0].lower():
+            for row in self.program_rows:
+                if program.lower() in row['name'].lower():
                     found = True
                     break
-            
             if not found:
-                # Buscar en archivos de inicio comunes
                 common_paths = [
                     f"C:\\Program Files\\{program}\\{program}.exe",
                     f"C:\\Program Files (x86)\\{program}\\{program}.exe",
                     f"C:\\Users\\{subprocess.getoutput('echo %USERNAME%')}\\AppData\\Local\\{program}\\{program}.exe"
                 ]
-                
                 for path in common_paths:
                     try:
                         if subprocess.run(['where', program], capture_output=True, shell=True).returncode == 0:
-                            self.tree.insert('', tk.END, values=(program, "Deshabilitado"), 
-                                           tags=("DISABLED", program, path))
+                            self.add_program_row(program, "Deshabilitado", "DISABLED", path)
                             break
                     except:
                         continue
+    def add_program_row(self, name, status, registry_path, path):
+        """Agrega una fila moderna a la lista de programas"""
+        frame = ctk.CTkFrame(self.program_scroll, fg_color="#232326", corner_radius=8)
+        frame.pack(fill="x", pady=2, padx=2)
+        # Selección visual
+        def select_row(event=None):
+            for r in self.program_rows:
+                r['frame'].configure(fg_color="#232326")
+            frame.configure(fg_color="#3b82f6")
+            self.selected_program = {
+                'name': name,
+                'status': status,
+                'registry_path': registry_path,
+                'path': path
+            }
+            self.status_var.set(f"Seleccionado: {name}")
+        frame.bind("<Button-1>", select_row)
+        # Nombre y estado
+        lbl_name = ctk.CTkLabel(frame, text=name, font=("Segoe UI", 12), text_color="#fafafa", width=400, anchor="w")
+        lbl_name.pack(side="left", padx=(8,0))
+        lbl_status = ctk.CTkLabel(frame, text=status, font=("Segoe UI", 12), text_color="#fafafa", width=180, anchor="w")
+        lbl_status.pack(side="left", padx=(8,0))
+        lbl_name.bind("<Button-1>", select_row)
+        lbl_status.bind("<Button-1>", select_row)
+        self.program_rows.append({
+            'frame': frame,
+            'name': name,
+            'status': status,
+            'registry_path': registry_path,
+            'path': path
+        })
     
     def disable_startup(self):
-        """Deshabilitar un elemento del inicio"""
-        selected = self.tree.selection()
+        """Deshabilitar un elemento del inicio moderno"""
+        selected = self.selected_program
         if not selected:
             messagebox.showwarning("Advertencia", "Seleccione un elemento para deshabilitar")
             return
-        
-        item = self.tree.item(selected[0])
-        name = item['values'][0]
-        status = item['values'][1]
-        tags = item['tags']
-        
+        name = selected['name']
+        status = selected['status']
+        registry_path = selected['registry_path']
         if "Deshabilitado" in status:
             messagebox.showinfo("Información", f"{name} ya está deshabilitado")
             return
-        
         if not name:
             messagebox.showwarning("Advertencia", "No se puede determinar el nombre del programa")
             return
-        
         try:
-            # Obtener la ruta del registro desde los tags
-            registry_path = tags[0] if tags else "HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Run"
-            
-            # Eliminar del registro para deshabilitarlo
-            subprocess.run(['reg', 'delete', registry_path, '/v', name, '/f'], 
-                         shell=True, check=True)
+            subprocess.run(['reg', 'delete', registry_path, '/v', name, '/f'], shell=True, check=True)
             messagebox.showinfo("Éxito", f"{name} deshabilitado del inicio")
             self.load_startup()
-            
         except subprocess.CalledProcessError:
-            # Si no funciona, intentar en ambos registros
             success = False
-            for reg_path in ["HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Run", 
-                           "HKLM\\Software\\Microsoft\\Windows\\CurrentVersion\\Run"]:
+            for reg_path in ["HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Run", "HKLM\\Software\\Microsoft\\Windows\\CurrentVersion\\Run"]:
                 try:
-                    subprocess.run(['reg', 'delete', reg_path, '/v', name, '/f'], 
-                                 shell=True, check=True)
+                    subprocess.run(['reg', 'delete', reg_path, '/v', name, '/f'], shell=True, check=True)
                     success = True
                     break
                 except:
                     continue
-            
             if success:
                 messagebox.showinfo("Éxito", f"{name} deshabilitado del inicio")
                 self.load_startup()
             else:
-                messagebox.showerror("Error", 
-                    f"No se pudo deshabilitar {name}. Puede requerir permisos de administrador.")
-                    
+                messagebox.showerror("Error", f"No se pudo deshabilitar {name}. Puede requerir permisos de administrador.")
         except Exception as e:
             messagebox.showerror("Error", f"Error inesperado: {str(e)}")
     
