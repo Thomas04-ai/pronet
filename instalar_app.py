@@ -1,5 +1,5 @@
-import tkinter as tk
-from tkinter import ttk, messagebox
+import customtkinter as ctk
+from tkinter import messagebox
 import subprocess
 import os
 import urllib.request
@@ -11,32 +11,28 @@ import zipfile
 
 class SoftwareInstaller:
     def __init__(self, parent_frame):
-        self.frame = ttk.Frame(parent_frame, padding="10")
-        self.frame.pack(fill=tk.BOTH, expand=True)
-        
+        self.frame = ctk.CTkFrame(parent_frame, corner_radius=15, fg_color="#18181b")
+        self.frame.pack(fill="both", expand=True, padx=12, pady=12)
+
         # Variables para almacenar las selecciones
         self.selected_software = {
-            # Navegadores
-            "Google Chrome": tk.BooleanVar(),
-            "Brave": tk.BooleanVar(),
-            "Opera GX": tk.BooleanVar(),
-            "Opera": tk.BooleanVar(),
-            "Zen": tk.BooleanVar(),
-            # Aplicaciones
-            "CPU-Z": tk.BooleanVar(),
-            "HWMonitor": tk.BooleanVar(),
-            "OpenShell": tk.BooleanVar(),
-            "DiskInfo": tk.BooleanVar(),
-            # Nuevas aplicaciones
-            "Discord": tk.BooleanVar(),
-            "Notepad++": tk.BooleanVar(),
-            "CRU (Custom Resolution Utility)": tk.BooleanVar(),
-            "DDU": tk.BooleanVar(),
-            "Lightshot": tk.BooleanVar(),
-            "Geek Uninstaller": tk.BooleanVar(),
-            # Compresores
-            "7-Zip": tk.BooleanVar(),
-            "WinRAR": tk.BooleanVar()
+            "Google Chrome": ctk.BooleanVar(),
+            "Brave": ctk.BooleanVar(),
+            "Opera GX": ctk.BooleanVar(),
+            "Opera": ctk.BooleanVar(),
+            "Zen": ctk.BooleanVar(),
+            "CPU-Z": ctk.BooleanVar(),
+            "HWMonitor": ctk.BooleanVar(),
+            "OpenShell": ctk.BooleanVar(),
+            "DiskInfo": ctk.BooleanVar(),
+            "Discord": ctk.BooleanVar(),
+            "Notepad++": ctk.BooleanVar(),
+            "CRU (Custom Resolution Utility)": ctk.BooleanVar(),
+            "DDU": ctk.BooleanVar(),
+            "Lightshot": ctk.BooleanVar(),
+            "Geek Uninstaller": ctk.BooleanVar(),
+            "7-Zip": ctk.BooleanVar(),
+            "WinRAR": ctk.BooleanVar()
         }
         
         # URLs de descarga actualizadas
@@ -63,140 +59,92 @@ class SoftwareInstaller:
         self.create_widgets()
     
     def create_widgets(self):
-        """Crear la interfaz del instalador"""
-        # Configuración de estilo
-        style = ttk.Style()
-        style.configure('Title.TLabel', font=('Helvetica', 14, 'bold'))
-        style.configure('Section.TLabelframe.Label', font=('Helvetica', 10, 'bold'))
-        
+        """Crear la interfaz moderna del instalador"""
+        ctk.set_appearance_mode("dark")
+        ctk.set_default_color_theme("dark-blue")
+
         # Título
-        title = ttk.Label(self.frame, text="Instalador de Software", style='Title.TLabel')
+        title = ctk.CTkLabel(self.frame, text="Instalador de Software", font=("Segoe UI", 22, "bold"), text_color="#fafafa")
         title.pack(pady=10)
-        
-        # Frame contenedor con scrollbar
-        container = ttk.Frame(self.frame)
-        container.pack(fill=tk.BOTH, expand=True)
-        
-        canvas = tk.Canvas(container)
-        scrollbar = ttk.Scrollbar(container, orient="vertical", command=canvas.yview)
-        scrollable_frame = ttk.Frame(canvas)
-        
-        scrollable_frame.bind(
-            "<Configure>",
-            lambda e: canvas.configure(
-                scrollregion=canvas.bbox("all")
-            )
-        )
-        
-        canvas.create_window((0, 0), window=scrollable_frame, anchor="nw")
-        canvas.configure(yscrollcommand=scrollbar.set)
-        
-        canvas.pack(side="left", fill="both", expand=True)
-        scrollbar.pack(side="right", fill="y")
-        
-        # Frame para navegadores
-        browsers_frame = ttk.LabelFrame(scrollable_frame, text="Navegadores Web", padding="10", style='Section.TLabelframe')
-        browsers_frame.pack(fill=tk.X, pady=5, padx=5)
-        
-        # Checkboxes para navegadores
-        browsers = ["Google Chrome", "Brave", "Opera GX", "Opera", "Zen"]
-        for browser in browsers:
-            cb = ttk.Checkbutton(browsers_frame, text=browser, variable=self.selected_software[browser])
-            cb.pack(anchor=tk.W, padx=5, pady=2)
-        
-        # Frame para utilidades del sistema
-        system_frame = ttk.LabelFrame(scrollable_frame, text="Utilidades del Sistema", padding="10", style='Section.TLabelframe')
-        system_frame.pack(fill=tk.X, pady=5, padx=5)
-        
-        # Checkboxes para utilidades del sistema
-        system_apps = ["CPU-Z", "HWMonitor", "OpenShell", "DiskInfo", "Geek Uninstaller", "7-Zip", "WinRAR"]
-        for app in system_apps:
-            cb = ttk.Checkbutton(system_frame, text=app, variable=self.selected_software[app])
-            cb.pack(anchor=tk.W, padx=5, pady=2)
-        
-        # Frame para herramientas avanzadas
-        advanced_frame = ttk.LabelFrame(scrollable_frame, text="Herramientas Avanzadas", padding="10", style='Section.TLabelframe')
-        advanced_frame.pack(fill=tk.X, pady=5, padx=5)
-        
-        # Checkboxes para herramientas avanzadas
-        advanced_apps = ["Notepad++", "CRU (Custom Resolution Utility)", "DDU"]
-        for app in advanced_apps:
-            cb = ttk.Checkbutton(advanced_frame, text=app, variable=self.selected_software[app])
-            cb.pack(anchor=tk.W, padx=5, pady=2)
-        
-        # Frame para otras aplicaciones
-        other_frame = ttk.LabelFrame(scrollable_frame, text="Otras Aplicaciones", padding="10", style='Section.TLabelframe')
-        other_frame.pack(fill=tk.X, pady=5, padx=5)
-        
-        # Checkboxes para otras aplicaciones
-        other_apps = ["Discord", "Lightshot"]
-        for app in other_apps:
-            cb = ttk.Checkbutton(other_frame, text=app, variable=self.selected_software[app])
-            cb.pack(anchor=tk.W, padx=5, pady=2)
-        
+
+        # ScrollableFrame para la lista de categorías
+        self.scrollable_frame = ctk.CTkScrollableFrame(self.frame, width=600, height=400, fg_color="#18181b")
+        self.scrollable_frame.pack(fill="both", expand=True, padx=8, pady=8)
+
+        # Paneles expandibles (acordeón)
+        self.category_panels = []
+        self.create_category_panel("Navegadores Web", ["Google Chrome", "Brave", "Opera GX", "Opera", "Zen"])
+        self.create_category_panel("Utilidades del Sistema", ["CPU-Z", "HWMonitor", "OpenShell", "DiskInfo", "Geek Uninstaller", "7-Zip", "WinRAR"])
+        self.create_category_panel("Herramientas Avanzadas", ["Notepad++", "CRU (Custom Resolution Utility)", "DDU"])
+        self.create_category_panel("Otras Aplicaciones", ["Discord", "Lightshot"])
+
         # Frame para botones
-        btn_frame = ttk.Frame(self.frame)
+        btn_frame = ctk.CTkFrame(self.frame, fg_color="#232326")
         btn_frame.pack(pady=10)
-        
-        # Botón de instalación
-        install_btn = ttk.Button(btn_frame, text="Instalar Seleccionados", command=self.install_selected)
-        install_btn.pack(side=tk.LEFT, padx=5)
-        
-        # Botón para seleccionar todo
-        select_all_btn = ttk.Button(btn_frame, text="Seleccionar Todo", command=self.select_all)
-        select_all_btn.pack(side=tk.LEFT, padx=5)
-        
-        # Botón para deseleccionar todo
-        deselect_all_btn = ttk.Button(btn_frame, text="Deseleccionar Todo", command=self.deselect_all)
-        deselect_all_btn.pack(side=tk.LEFT, padx=5)
-        
+        ctk.CTkButton(btn_frame, text="Instalar Seleccionados", command=self.install_selected, fg_color="#3b82f6", hover_color="#6366f1", text_color="#fafafa").pack(side="left", padx=8)
+        ctk.CTkButton(btn_frame, text="Seleccionar Todo", command=self.select_all, fg_color="#64748b", hover_color="#0ea5e9", text_color="#fafafa").pack(side="left", padx=8)
+        ctk.CTkButton(btn_frame, text="Deseleccionar Todo", command=self.deselect_all, fg_color="#ef4444", hover_color="#dc2626", text_color="#fafafa").pack(side="left", padx=8)
+
         # Barra de progreso
-        self.progress = ttk.Progressbar(self.frame, orient=tk.HORIZONTAL, length=400, mode='determinate')
+        self.progress = ctk.CTkProgressBar(self.frame, width=400)
         self.progress.pack(pady=5)
-        
+        self.progress.set(0)
+
         # Etiqueta de estado
-        self.status_label = ttk.Label(self.frame, text="Seleccione los programas a instalar", wraplength=400)
+        self.status_label = ctk.CTkLabel(self.frame, text="Seleccione los programas a instalar", font=("Segoe UI", 13), text_color="#f59e42", wraplength=400)
         self.status_label.pack(pady=5)
+
+    def create_category_panel(self, title, items):
+        panel = ctk.CTkFrame(self.scrollable_frame, corner_radius=10, fg_color="#232326")
+        panel.pack(fill="x", pady=6, padx=8)
+        # Botón para expandir/colapsar
+        expanded = ctk.BooleanVar(value=False)
+        def toggle():
+            if expanded.get():
+                content_frame.pack_forget()
+                expand_btn.configure(text=f"+ {title}")
+                expanded.set(False)
+            else:
+                content_frame.pack(fill="x", padx=8, pady=4)
+                expand_btn.configure(text=f"- {title}")
+                expanded.set(True)
+        expand_btn = ctk.CTkButton(panel, text=f"+ {title}", command=toggle, fg_color="#3b82f6", hover_color="#6366f1", text_color="#fafafa")
+        expand_btn.pack(fill="x", pady=2)
+        # Frame para los checkboxes
+        content_frame = ctk.CTkFrame(panel, fg_color="#232326")
+        for item in items:
+            cb = ctk.CTkCheckBox(content_frame, text=item, variable=self.selected_software[item], fg_color="#27272a", text_color="#fafafa")
+            cb.pack(anchor="w", padx=8, pady=2)
+        self.category_panels.append(panel)
     
     def select_all(self):
-        """Seleccionar todos los programas"""
         for var in self.selected_software.values():
             var.set(True)
     
     def deselect_all(self):
-        """Deseleccionar todos los programas"""
         for var in self.selected_software.values():
             var.set(False)
     
     def install_selected(self):
-        """Instalar los programas seleccionados"""
         selected = [name for name, var in self.selected_software.items() if var.get()]
-        
         if not selected:
             messagebox.showwarning("Advertencia", "No ha seleccionado ningún programa para instalar")
             return
-        
         if not self.is_admin():
             if not messagebox.askyesno(
                 "Permisos requeridos", 
-                "Esta operación requiere privilegios de administrador. ¿Desea reiniciar la aplicación como administrador?"
-            ):
+                "Esta operación requiere privilegios de administrador. ¿Desea reiniciar la aplicación como administrador?"):
                 return
-            
             self.run_as_admin()
             return
-        
         total = len(selected)
-        self.progress['maximum'] = total
-        self.progress['value'] = 0
-        
+        self.progress.configure(mode="determinate")
+        self.progress.set(0)
         installed = 0
         failed = []
-        
         for i, software in enumerate(selected, 1):
-            self.status_label.config(text=f"Instalando {software}... ({i}/{total})")
+            self.status_label.configure(text=f"Instalando {software}... ({i}/{total})")
             self.frame.update()
-            
             try:
                 if self.install_software(software):
                     installed += 1
@@ -205,63 +153,85 @@ class SoftwareInstaller:
             except Exception as e:
                 failed.append(software)
                 print(f"Error instalando {software}: {str(e)}")
-            
-            self.progress['value'] = i
+            self.progress.set(i/total)
             self.frame.update()
-        
-        # Mostrar resumen
         message = f"Instalación completada:\n\nInstalados correctamente: {installed}"
         if failed:
             message += f"\n\nFallaron: {', '.join(failed)}"
-        
-        self.status_label.config(text="Instalación completada")
+        self.status_label.configure(text="Instalación completada")
         messagebox.showinfo("Resultado", message)
     
     def install_software(self, software_name):
-        """Instalar un software específico"""
+        """Instalar un software específico con manejo de errores y certificados"""
         url = self.download_urls.get(software_name)
         if not url:
             messagebox.showerror("Error", f"No hay URL de descarga configurada para {software_name}")
             return False
-        
+
+        # Enlaces alternativos para DiskInfo
+        alt_urls = {
+            "DiskInfo": [
+                "https://crystalmark.info/download/zip/CrystalDiskInfo8_17_14.zip",
+                "https://crystalmark.info/download/zip/CrystalDiskInfoPortable.zip"
+            ]
+        }
+
         try:
-            # Descargar el instalador
-            self.status_label.config(text=f"Descargando {software_name}...")
+            self.status_label.configure(text=f"Descargando {software_name}...")
             self.frame.update()
-            
             temp_dir = tempfile.gettempdir()
             download_file = f"{software_name.replace(' ', '_')}_installer"
-            
             # Determinar extensión del archivo
             if software_name in ["CRU (Custom Resolution Utility)", "Geek Uninstaller"]:
                 download_file += ".zip"
+            elif software_name == "DiskInfo" and url.endswith(".zip"):
+                download_file += ".zip"
             else:
                 download_file += ".exe"
-            
             installer_path = os.path.join(temp_dir, download_file)
-            
-            # Descargar el archivo
-            urllib.request.urlretrieve(url, installer_path)
-            
-            # Ejecutar el instalador o extraer archivos
-            self.status_label.config(text=f"Instalando {software_name}...")
+
+            # Descarga con manejo de certificados
+            def try_download(url_to_try):
+                try:
+                    import certifi
+                    urllib.request.urlretrieve(url_to_try, installer_path)
+                    return True
+                except Exception as e:
+                    # Si es error de certificado, usar contexto SSL
+                    try:
+                        import ssl, certifi
+                        ssl_context = ssl.create_default_context(cafile=certifi.where())
+                        with urllib.request.urlopen(url_to_try, context=ssl_context) as response, open(installer_path, 'wb') as out_file:
+                            out_file.write(response.read())
+                        return True
+                    except Exception as e2:
+                        print(f"Error de descarga: {e2}")
+                        return False
+
+            downloaded = try_download(url)
+            # Si DiskInfo falla, probar alternativos
+            if not downloaded and software_name == "DiskInfo":
+                for alt_url in alt_urls["DiskInfo"]:
+                    if try_download(alt_url):
+                        downloaded = True
+                        break
+            if not downloaded:
+                messagebox.showerror("Error", f"No se pudo descargar {software_name}. Revisa tu conexión o intenta más tarde.")
+                return False
+
+            self.status_label.configure(text=f"Instalando {software_name}...")
             self.frame.update()
-            
-            # Manejo especial para CRU
+
+            # Manejo especial para CRU y DiskInfo ZIP
             if software_name == "CRU (Custom Resolution Utility)":
-                # Extraer el ZIP a una carpeta CRU en Program Files
                 target_dir = os.path.join(os.environ['ProgramFiles'], 'CRU')
                 os.makedirs(target_dir, exist_ok=True)
-                
                 with zipfile.ZipFile(installer_path, 'r') as zip_ref:
                     zip_ref.extractall(target_dir)
-                
-                # Crear un acceso directo en el escritorio si es posible
                 try:
                     from win32com.client import Dispatch
                     desktop = os.path.join(os.path.join(os.environ['USERPROFILE']), 'Desktop')
                     shortcut_path = os.path.join(desktop, 'CRU.lnk')
-                    
                     target = os.path.join(target_dir, 'CRU.exe')
                     shell = Dispatch('WScript.Shell')
                     shortcut = shell.CreateShortCut(shortcut_path)
@@ -270,18 +240,23 @@ class SoftwareInstaller:
                     shortcut.save()
                 except:
                     pass
-                
                 os.remove(installer_path)
                 return True
-            
-            # Manejar Geek Uninstaller (extraer ZIP)
             if software_name == "Geek Uninstaller":
                 import zipfile
                 with zipfile.ZipFile(installer_path, 'r') as zip_ref:
                     zip_ref.extractall(os.path.join(temp_dir, "GeekUninstaller"))
                 os.remove(installer_path)
                 return True
-            
+            if software_name == "DiskInfo" and installer_path.endswith(".zip"):
+                # Extraer el ZIP a Program Files\CrystalDiskInfo
+                target_dir = os.path.join(os.environ['ProgramFiles'], 'CrystalDiskInfo')
+                os.makedirs(target_dir, exist_ok=True)
+                with zipfile.ZipFile(installer_path, 'r') as zip_ref:
+                    zip_ref.extractall(target_dir)
+                os.remove(installer_path)
+                return True
+
             # Comandos de instalación silenciosa para diferentes programas
             silent_switches = {
                 "Google Chrome": "/silent /install",
@@ -299,24 +274,20 @@ class SoftwareInstaller:
                 "7-Zip": "/S",
                 "WinRAR": "/S"
             }
-            
-            # Comando de instalación
             cmd = f'"{installer_path}" {silent_switches.get(software_name, "")}'
-            
-            # Para WinRAR, añadir parámetro adicional para aceptar la licencia
             if software_name == "WinRAR":
                 cmd += ' /D=C:\\Program Files\\WinRAR'
-            
-            result = subprocess.run(cmd, shell=True, check=True)
-            
-            # Limpiar instalador temporal
+            try:
+                result = subprocess.run(cmd, shell=True, check=True)
+            except Exception as e:
+                messagebox.showerror("Error", f"No se pudo instalar {software_name}. Error: {str(e)}")
+                return False
             if os.path.exists(installer_path):
                 os.remove(installer_path)
-            
             return result.returncode == 0
-            
         except Exception as e:
             print(f"Error instalando {software_name}: {str(e)}")
+            messagebox.showerror("Error", f"No se pudo instalar {software_name}. Error: {str(e)}")
             return False
     
     def is_admin(self):
@@ -336,19 +307,8 @@ class SoftwareInstaller:
 
 # Ejemplo de cómo integrar en tu aplicación principal
 if __name__ == "__main__":
-    root = tk.Tk()
-    root.title("Instalador de Software")
-    root.geometry("650x650")
-    
-    # Crear pestañas
-    notebook = ttk.Notebook(root)
-    notebook.pack(fill=tk.BOTH, expand=True)
-    
-    # Pestaña de instalador
-    installer_tab = ttk.Frame(notebook)
-    notebook.add(installer_tab, text="Instalar Software")
-    
-    # Agregar el instalador
-    installer = SoftwareInstaller(installer_tab)
-    
-    root.mainloop()
+    app = ctk.CTk()
+    app.title("Instalador de Software")
+    app.geometry("700x700")
+    installer = SoftwareInstaller(app)
+    app.mainloop()
