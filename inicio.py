@@ -10,22 +10,36 @@ class StartupManager(ctk.CTk):
         ctk.set_appearance_mode("dark")
         ctk.set_default_color_theme("dark-blue")
         self.title("Gestor de Inicio de Windows")
-        self.geometry("700x500")
+        self.geometry("700x520")
         self.configure(bg="#18181b")
 
-        self.frame = ctk.CTkFrame(self, corner_radius=15, fg_color="#232326")
-        self.frame.pack(fill="both", expand=True, padx=24, pady=24)
+        # Frame principal moderno
+        main_frame = ctk.CTkFrame(self, corner_radius=18, fg_color="#232326")
+        main_frame.pack(fill="both", expand=True, padx=28, pady=28)
 
-        title_label = ctk.CTkLabel(self.frame, text="Gestor de Inicio de Windows", font=("Segoe UI", 20, "bold"), text_color="#fafafa")
-        title_label.pack(pady=12)
+        # Título
+        ctk.CTkLabel(main_frame, text="Gestor de Inicio de Windows", font=("Segoe UI", 22, "bold"), text_color="#fafafa").pack(pady=(10, 18))
 
-        # Treeview (usamos ttk pero lo integramos en el frame de ctk)
-        tree_frame = ctk.CTkFrame(self.frame, corner_radius=10, fg_color="#232326")
-        tree_frame.pack(fill="both", expand=True, pady=(0, 10))
+        # Frame para Treeview y barra de búsqueda
+        tree_outer_frame = ctk.CTkFrame(main_frame, corner_radius=12, fg_color="#18181b")
+        tree_outer_frame.pack(fill="both", expand=True, pady=(0, 12))
+
+        # Barra de búsqueda
+        search_frame = ctk.CTkFrame(tree_outer_frame, fg_color="#18181b")
+        search_frame.pack(fill="x", pady=(8, 2), padx=8)
+        ctk.CTkLabel(search_frame, text="Buscar programa:", font=("Segoe UI", 13), text_color="#fafafa").pack(side="left", padx=(4, 6))
+        self.search_var = ctk.StringVar()
+        search_entry = ctk.CTkEntry(search_frame, textvariable=self.search_var, width=220, fg_color="#232326", text_color="#fafafa")
+        search_entry.pack(side="left", padx=(0, 8))
+        self.search_var.trace_add("write", lambda *args: self.filter_treeview())
+
+        # Treeview con estilo profesional
+        tree_frame = ctk.CTkFrame(tree_outer_frame, corner_radius=10, fg_color="#232326")
+        tree_frame.pack(fill="both", expand=True, pady=(0, 8), padx=8)
 
         style = tk.ttk.Style()
         style.theme_use("clam")
-        style.configure("Treeview", background="#232326", foreground="#fafafa", fieldbackground="#232326", font=("Segoe UI", 12))
+        style.configure("Treeview", background="#232326", foreground="#fafafa", fieldbackground="#232326", font=("Segoe UI", 12), borderwidth=0)
         style.configure("Treeview.Heading", background="#27272a", foreground="#fafafa", font=("Segoe UI", 13, "bold"))
         style.map('Treeview', background=[('selected', '#3b82f6')])
 
@@ -45,15 +59,32 @@ class StartupManager(ctk.CTk):
         tree_frame.grid_rowconfigure(0, weight=1)
         tree_frame.grid_columnconfigure(0, weight=1)
 
-        # Botones
-        btn_frame = ctk.CTkFrame(self.frame, corner_radius=10, fg_color="#232326")
-        btn_frame.pack(fill="x", pady=5)
+        # Botones con diseño moderno
+        btn_frame = ctk.CTkFrame(main_frame, corner_radius=10, fg_color="#232326")
+        btn_frame.pack(fill="x", pady=5, padx=8)
+        ctk.CTkButton(btn_frame, text="Deshabilitar Seleccionado", command=self.disable_startup, fg_color="#ef4444", hover_color="#dc2626", text_color="#fafafa").pack(side="left", padx=7, pady=8, fill="x", expand=True)
+        ctk.CTkButton(btn_frame, text="Actualizar Lista", command=self.load_startup, fg_color="#3b82f6", hover_color="#2563eb", text_color="#fafafa").pack(side="right", padx=7, pady=8, fill="x", expand=True)
 
-        ctk.CTkButton(btn_frame, text="Deshabilitar Seleccionado", command=self.disable_startup, fg_color="#27272a", hover_color="#ef4444", text_color="#fafafa").pack(side="left", padx=5, pady=7, fill="x", expand=True)
-        ctk.CTkButton(btn_frame, text="Habilitar Seleccionado", command=self.enable_startup, fg_color="#27272a", hover_color="#22c55e", text_color="#fafafa").pack(side="left", padx=5, pady=7, fill="x", expand=True)
-        ctk.CTkButton(btn_frame, text="Actualizar Lista", command=self.load_startup, fg_color="#27272a", hover_color="#3b82f6", text_color="#fafafa").pack(side="right", padx=5, pady=7, fill="x", expand=True)
+        # Barra de estado inferior
+        self.status_var = ctk.StringVar(value="Selecciona un programa para habilitar o deshabilitar del inicio")
+        ctk.CTkLabel(main_frame, textvariable=self.status_var, font=("Segoe UI", 13), text_color="#f59e42", anchor="w").pack(fill="x", pady=(8, 2), padx=8)
 
         self.load_startup()
+    def filter_treeview(self):
+        """Filtra los elementos del Treeview según el texto de búsqueda"""
+        search_text = self.search_var.get().lower() if hasattr(self, 'search_var') else ""
+        for item in self.tree.get_children():
+            values = self.tree.item(item)['values']
+            name = str(values[0]).lower() if values else ""
+            if search_text in name:
+                self.tree.reattach(item, '', tk.END)
+            else:
+                self.tree.detach(item)
+        # Actualiza barra de estado
+        if search_text:
+            self.status_var.set(f"Filtrando por: '{self.search_var.get()}'")
+        else:
+            self.status_var.set("Selecciona un programa para habilitar o deshabilitar del inicio")
     
     def load_startup(self):
         self.tree.delete(*self.tree.get_children())
@@ -179,53 +210,6 @@ class StartupManager(ctk.CTk):
         except Exception as e:
             messagebox.showerror("Error", f"Error inesperado: {str(e)}")
     
-    def enable_startup(self):
-        """Habilitar un elemento del inicio"""
-        selected = self.tree.selection()
-        if not selected:
-            messagebox.showwarning("Advertencia", "Seleccione un elemento para habilitar")
-            return
-        
-        item = self.tree.item(selected[0])
-        name = item['values'][0]
-        status = item['values'][1]
-        tags = item['tags']
-        
-        if "Habilitado" in status:
-            messagebox.showinfo("Información", f"{name} ya está habilitado")
-            return
-        
-        if not name:
-            messagebox.showwarning("Advertencia", "No se puede determinar el nombre del programa")
-            return
-        
-        # Si es un programa deshabilitado, necesitamos obtener su ruta
-        if tags and len(tags) > 2:
-            location = tags[2]
-        else:
-            # Solicitar al usuario la ruta del programa
-            location = tk.simpledialog.askstring(
-                "Ruta del programa", 
-                f"Ingrese la ruta completa del ejecutable para {name}:",
-                initialvalue=f"C:\\Program Files\\{name}\\{name}.exe"
-            )
-            
-        if not location:
-            messagebox.showwarning("Advertencia", "Se necesita la ruta del programa para habilitarlo")
-            return
-        
-        try:
-            # Agregar al registro de usuario para habilitarlo
-            subprocess.run(['reg', 'add', 'HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Run', 
-                          '/v', name, '/t', 'REG_SZ', '/d', f'"{location}"', '/f'], 
-                         shell=True, check=True)
-            messagebox.showinfo("Éxito", f"{name} habilitado en el inicio")
-            self.load_startup()
-            
-        except subprocess.CalledProcessError as e:
-            messagebox.showerror("Error", f"No se pudo habilitar: {str(e)}")
-        except Exception as e:
-            messagebox.showerror("Error", f"Error inesperado: {str(e)}")
 
 # Agregar interfaz principal para ejecutar directamente
 if __name__ == "__main__":
