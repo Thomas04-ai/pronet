@@ -1,5 +1,5 @@
-import tkinter as tk
-from tkinter import ttk, messagebox
+import customtkinter as ctk
+from tkinter import messagebox
 import winreg
 import subprocess
 import json
@@ -7,17 +7,19 @@ import os
 import ctypes
 import sys
 
-class InternetOptimizerGUI:
-    def __init__(self, root):
-        self.root = root
-        self.root.title("Optimizador de Internet")
+class InternetOptimizerGUI(ctk.CTk):
+    def __init__(self):
+        super().__init__()
+        self.title("Optimizador de Internet")
+        self.geometry("540x360")
+        ctk.set_appearance_mode("dark")
+        ctk.set_default_color_theme("dark-blue")
+        self.configure(bg="#18181b")
         self.backup_file = "internet_settings_backup.json"
-        
         # Verificar permisos de administrador
         if not self.is_admin():
             self.run_as_admin()
             sys.exit()
-        
         self.create_widgets()
     
     def is_admin(self):
@@ -30,59 +32,42 @@ class InternetOptimizerGUI:
         ctypes.windll.shell32.ShellExecuteW(None, "runas", sys.executable, " ".join(sys.argv), None, 1)
     
     def create_widgets(self):
-        """Crear la interfaz gráfica básica"""
-        # Frame principal
-        main_frame = ttk.Frame(self.root, padding="20")
-        main_frame.pack(fill=tk.BOTH, expand=True)
-        
-        # Título
-        title_label = ttk.Label(main_frame, text="Optimizador de Conexión a Internet", 
-                              font=('Helvetica', 14, 'bold'))
+        main_frame = ctk.CTkFrame(self, corner_radius=15, fg_color="#18181b")
+        main_frame.pack(fill="both", expand=True, padx=24, pady=24)
+
+        title_label = ctk.CTkLabel(main_frame, text="Optimizador de Conexión a Internet", font=("Segoe UI", 22, "bold"), text_color="#fafafa")
         title_label.pack(pady=10)
-        
-        # Descripción
-        desc_label = ttk.Label(main_frame, 
-                             text="Esta herramienta optimiza la configuración de red para mejorar el rendimiento",
-                             wraplength=400)
+
+        desc_label = ctk.CTkLabel(main_frame, text="Esta herramienta optimiza la configuración de red para mejorar el rendimiento", font=("Segoe UI", 13), text_color="#f59e42", wraplength=420)
         desc_label.pack(pady=10)
-        
-        # Botones
-        btn_frame = ttk.Frame(main_frame)
-        btn_frame.pack(pady=20)
-        
-        self.optimize_btn = ttk.Button(btn_frame, text="Optimizar Internet", 
-                                      command=self.optimize_internet)
-        self.optimize_btn.pack(side=tk.LEFT, padx=10)
-        
-        self.revert_btn = ttk.Button(btn_frame, text="Revertir Cambios", 
-                                    command=self.revert_changes)
-        self.revert_btn.pack(side=tk.LEFT, padx=10)
-        
-        # Área de estado
-        self.status_frame = ttk.LabelFrame(main_frame, text="Estado", padding=10)
-        self.status_frame.pack(fill=tk.BOTH, expand=True, pady=10)
-        
-        self.status_label = ttk.Label(self.status_frame, text="Preparado para optimizar")
-        self.status_label.pack()
-        
-        # Verificar si hay backup existente
+
+        btn_frame = ctk.CTkFrame(main_frame, fg_color="#232326")
+        btn_frame.pack(pady=16)
+        self.optimize_btn = ctk.CTkButton(btn_frame, text="Optimizar Internet", command=self.optimize_internet, fg_color="#3b82f6", hover_color="#6366f1", text_color="#fafafa")
+        self.optimize_btn.pack(side="left", padx=10)
+        self.revert_btn = ctk.CTkButton(btn_frame, text="Revertir Cambios", command=self.revert_changes, fg_color="#64748b", hover_color="#0ea5e9", text_color="#fafafa")
+        self.revert_btn.pack(side="left", padx=10)
+
+        self.status_frame = ctk.CTkFrame(main_frame, corner_radius=10, fg_color="#232326")
+        self.status_frame.pack(fill="both", expand=True, pady=10)
+        self.status_label = ctk.CTkLabel(self.status_frame, text="Preparado para optimizar", font=("Consolas", 12), text_color="#fafafa", anchor="w")
+        self.status_label.pack(fill="x", padx=8, pady=8)
+
         self.check_backup()
     
     def check_backup(self):
         """Verificar si existe configuración previa"""
         if os.path.exists(self.backup_file):
-            self.status_label.config(text="ADVERTENCIA: Hay cambios previos. Revierta antes de optimizar nuevamente.")
-            self.optimize_btn.config(state=tk.DISABLED)
+            self.status_label.configure(text="ADVERTENCIA: Hay cambios previos. Revierta antes de optimizar nuevamente.")
+            self.optimize_btn.configure(state="disabled")
         else:
-            self.status_label.config(text="Listo para optimizar la conexión")
-            self.optimize_btn.config(state=tk.NORMAL)
+            self.status_label.configure(text="Listo para optimizar la conexión")
+            self.optimize_btn.configure(state="normal")
     
     def optimize_internet(self):
         """Aplicar optimizaciones"""
         try:
             self.create_backup()
-            
-            # Aplicar optimizaciones
             optimizations = [
                 ("Configurando MTU", lambda: self.set_mtu(1500)),
                 ("Optimizando parámetros TCP", lambda: self.set_tcp_global_parameters(
@@ -92,7 +77,6 @@ class InternetOptimizerGUI:
                     EnableWindowAutoTuning=1,
                     Tcp1323Opts=1
                 )),
-                ("Ajustando plan de energía", lambda: self.set_network_power_plan("Maximum Performance")),
                 ("Limpiando DNS", self.flush_dns),
                 ("Optimizando parámetros avanzados", lambda: self.set_tcp_parameters(
                     TcpAckFrequency=1,
@@ -101,19 +85,16 @@ class InternetOptimizerGUI:
                 )),
                 ("Desactivando algoritmo de Nagle", self.disable_nagle_algorithm)
             ]
-            
             for desc, func in optimizations:
-                self.status_label.config(text=desc + "...")
-                self.root.update()  # Actualizar la interfaz
+                self.status_label.configure(text=desc + "...")
+                self.update()  # Actualizar la interfaz
                 func()
-                self.root.after(500)  # Pequeña pausa para que se vea el progreso
-            
-            self.status_label.config(text="¡Optimización completada con éxito!")
+                self.after(500)  # Pequeña pausa para que se vea el progreso
+            self.status_label.configure(text="¡Optimización completada con éxito!")
             messagebox.showinfo("Éxito", "Optimizaciones aplicadas correctamente.\nAlgunos cambios requieren reinicio.")
             self.check_backup()
-            
         except Exception as e:
-            self.status_label.config(text="Error durante la optimización")
+            self.status_label.configure(text="Error durante la optimización")
             messagebox.showerror("Error", f"No se pudo completar la optimización:\n{str(e)}")
     
     def revert_changes(self):
@@ -122,36 +103,26 @@ class InternetOptimizerGUI:
             if not os.path.exists(self.backup_file):
                 messagebox.showwarning("Advertencia", "No hay configuración previa guardada")
                 return
-            
             with open(self.backup_file, 'r') as f:
                 backup_data = json.load(f)
-            
-            # Revertir cambios
             reversions = [
                 ("Restaurando MTU", lambda: self.set_mtu(backup_data.get('MTU', 1500))),
                 ("Restaurando parámetros TCP", lambda: self.set_tcp_global_parameters(
                     **backup_data.get('TCPGlobalParams', {}))),
-                ("Restaurando plan de energía", lambda: self.set_network_power_plan(
-                    backup_data.get('NetworkPowerPlan', "Balanced"))),
                 ("Restaurando parámetros avanzados", lambda: self.set_tcp_parameters(
                     **backup_data.get('TCPParams', {})))
             ]
-            
             for desc, func in reversions:
-                self.status_label.config(text=desc + "...")
-                self.root.update()  # Actualizar la interfaz
+                self.status_label.configure(text=desc + "...")
+                self.update()  # Actualizar la interfaz
                 func()
-                self.root.after(500)  # Pequeña pausa
-            
-            # Eliminar backup
+                self.after(500)  # Pequeña pausa
             os.remove(self.backup_file)
-            
-            self.status_label.config(text="Configuración revertida correctamente")
+            self.status_label.configure(text="Configuración revertida correctamente")
             messagebox.showinfo("Éxito", "Todos los cambios han sido revertidos")
             self.check_backup()
-            
         except Exception as e:
-            self.status_label.config(text="Error al revertir cambios")
+            self.status_label.configure(text="Error al revertir cambios")
             messagebox.showerror("Error", f"No se pudieron revertir los cambios:\n{str(e)}")
     
     # ===== Métodos técnicos (iguales a la versión anterior) =====
@@ -160,10 +131,8 @@ class InternetOptimizerGUI:
         backup_data = {
             'MTU': self.get_current_mtu(),
             'TCPGlobalParams': self.get_tcp_global_parameters(),
-            'NetworkPowerPlan': self.get_current_network_power_plan(),
             'TCPParams': self.get_tcp_parameters()
         }
-        
         with open(self.backup_file, 'w') as f:
             json.dump(backup_data, f, indent=4)
     
@@ -222,26 +191,7 @@ class InternetOptimizerGUI:
         
         return params
     
-    def set_network_power_plan(self, plan_name):
-        try:
-            if plan_name == "Maximum Performance":
-                subprocess.run(['powercfg', '-setactive', '8c5e7fda-e8bf-4a96-9a85-a6e23a8c635c'], 
-                             check=True, creationflags=subprocess.CREATE_NO_WINDOW)
-            else:
-                subprocess.run(['powercfg', '-setactive', '381b4222-f694-41f0-9685-ff5bb260df2e'], 
-                             check=True, creationflags=subprocess.CREATE_NO_WINDOW)
-        except Exception as e:
-            raise Exception(f"Error al configurar plan de energía: {str(e)}")
-    
-    def get_current_network_power_plan(self):
-        try:
-            result = subprocess.run(['powercfg', '/getactivescheme'], 
-                                  capture_output=True, text=True, creationflags=subprocess.CREATE_NO_WINDOW)
-            if "Maximum Performance" in result.stdout:
-                return "Maximum Performance"
-            return "Balanced"
-        except:
-            return "Balanced"
+    # ...existing code...
     
     def flush_dns(self):
         try:
@@ -295,9 +245,7 @@ class InternetOptimizerGUI:
 
 if __name__ == "__main__":
     try:
-        root = tk.Tk()
-        root.geometry("500x300")
-        app = InternetOptimizerGUI(root)
-        root.mainloop()
+        app = InternetOptimizerGUI()
+        app.mainloop()
     except Exception as e:
         messagebox.showerror("Error fatal", f"La aplicación falló:\n{str(e)}")
